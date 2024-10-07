@@ -1,0 +1,187 @@
+import os
+import json
+from datetime import datetime
+import matplotlib.pyplot as plt   # Optional for visualizations
+
+# Load Expenses from File
+def load_expenses(filename='expenses.json'):
+    if os.path.exists(filename):
+        with open(filename, 'r') as file:
+            return json.load(file)
+    return []
+
+# Save Expenses to File
+def save_expenses(expenses, filename='expenses.json'):
+    with open(filename, 'w') as file:
+        json.dump(expenses, file, indent=4)
+
+# Add a New Expense
+def add_expense(expenses):
+    try:
+        amount = float(input("Enter the expense amount: "))
+        category = input("Enter the category (e.g., Food, Transport, Entertainment): ").capitalize()
+        date_input = input("Enter the date (YYYY-MM-DD) or press Enter for today's date: ")
+        if date_input:
+            date = datetime.strptime(date_input, '%Y-%m-%d').strftime('%Y-%m-%d')
+        else:
+            date = datetime.today().strftime('%Y-%m-%d')
+        expense = {
+            'amount': amount,
+            'category': category,
+            'date': date
+        }
+        expenses.append(expense)
+        save_expenses(expenses)
+        print("Expense added successfully!")
+    except ValueError:
+        print("Invalid input. Please enter the correct details.")
+
+# View Summary by Category
+def view_summary_by_category(expenses):
+    category_totals = {}
+    for expense in expenses:
+        category = expense['category']
+        amount = expense['amount']
+        category_totals[category] = category_totals.get(category, 0) + amount
+
+    if category_totals:
+        print("\nSummary by Category:")
+        for category, total in category_totals.items():
+            print(f"{category}: ${total:.2f}")
+    else:
+        print("No expenses found.")
+
+# View Overall Summary
+def view_overall_summary(expenses):
+    total = sum(expense['amount'] for expense in expenses)
+    print(f"\nTotal overall spending: ${total:.2f}")
+
+# View Spending by Time Period
+def view_spending_over_time(expenses):
+    time_period = input("Enter time period (daily/weekly/monthly): ").lower()
+    summaries = {}
+
+    for expense in expenses:
+        if time_period == "daily":
+            key = expense['date']
+        elif time_period == "weekly":
+            date_obj = datetime.strptime(expense['date'], '%Y-%m-%d')
+            key = date_obj.strftime('%Y-%U')  # Week of the year
+        elif time_period == "monthly":
+            key = expense['date'][:7]  # YYYY-MM format
+        else:
+            print("Invalid time period. Please choose daily, weekly, or monthly.")
+            return
+
+        summaries[key] = summaries.get(key, 0) + expense['amount']
+
+    if summaries:
+        print(f"\nSpending over time ({time_period.capitalize()}):")
+        for period, total in summaries.items():
+            print(f"{period}: ${total:.2f}")
+    else:
+        print("No expenses found.")
+
+# Delete an Expense (Optional)
+def delete_expense(expenses):
+    view_all_expenses(expenses)
+    try:
+        index = int(input("\nEnter the index of the expense to delete: "))
+        if 0 <= index < len(expenses):
+            del expenses[index]
+            save_expenses(expenses)
+            print("Expense deleted successfully!")
+        else:
+            print("Invalid index.")
+    except ValueError:
+        print("Invalid input.")
+
+# Edit an Expense (Optional)
+def edit_expense(expenses):
+    view_all_expenses(expenses)
+    try:
+        index = int(input("\nEnter the index of the expense to edit: "))
+        if 0 <= index < len(expenses):
+            expense = expenses[index]
+            print(f"Editing Expense: {expense}")
+            amount = float(input(f"Enter the new amount (current: {expense['amount']}): "))
+            category = input(f"Enter the new category (current: {expense['category']}): ").capitalize()
+            date_input = input(f"Enter the new date (YYYY-MM-DD) (current: {expense['date']}): ")
+            date = date_input if date_input else expense['date']
+
+            expenses[index] = {'amount': amount, 'category': category, 'date': date}
+            save_expenses(expenses)
+            print("Expense updated successfully!")
+        else:
+            print("Invalid index.")
+    except ValueError:
+        print("Invalid input.")
+
+# View All Expenses
+def view_all_expenses(expenses):
+    if expenses:
+        print("\nAll Expenses:")
+        for index, expense in enumerate(expenses):
+            print(f"{index}. {expense['date']} - {expense['category']}: ${expense['amount']:.2f}")
+    else:
+        print("No expenses found.")
+
+# Graphical Representation (Optional)
+def plot_expenses_by_category(expenses):
+    category_totals = {}
+    for expense in expenses:
+        category = expense['category']
+        amount = expense['amount']
+        category_totals[category] = category_totals.get(category, 0) + amount
+
+    categories = list(category_totals.keys())
+    totals = list(category_totals.values())
+
+    plt.figure(figsize=(8, 6))
+    plt.pie(totals, labels=categories, autopct='%1.1f%%', startangle=140)
+    plt.title('Expenses by Category')
+    plt.show()
+
+# Main Menu
+def main_menu():
+    expenses = load_expenses()
+
+    while True:
+        print("\n----- Personal Expense Tracker -----")
+        print("1. Add Expense")
+        print("2. View Summary by Category")
+        print("3. View Overall Summary")
+        print("4. View Spending Over Time")
+        print("5. View All Expenses")
+        print("6. Delete an Expense (Optional)")
+        print("7. Edit an Expense (Optional)")
+        print("8. Plot Expenses by Category (Optional)")
+        print("9. Exit")
+
+        choice = input("Enter your choice (1-9): ")
+
+        if choice == '1':
+            add_expense(expenses)
+        elif choice == '2':
+            view_summary_by_category(expenses)
+        elif choice == '3':
+            view_overall_summary(expenses)
+        elif choice == '4':
+            view_spending_over_time(expenses)
+        elif choice == '5':
+            view_all_expenses(expenses)
+        elif choice == '6':
+            delete_expense(expenses)
+        elif choice == '7':
+            edit_expense(expenses)
+        elif choice == '8':
+            plot_expenses_by_category(expenses)
+        elif choice == '9':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+# Run the program
+if __name__ == "__main__":
+    main_menu()
